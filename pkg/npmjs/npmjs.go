@@ -68,6 +68,7 @@ func GetDependencyListByVersion(pkg *Pkg, version *string) (dependencies map[str
 
 type DepNode struct {
 	Name     string
+	Version  string
 	Children []*DepNode
 }
 
@@ -92,6 +93,7 @@ func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, e
 	for pkg := range deps {
 		intermediateNode := &DepNode{
 			Name:     pkg,
+			Version:  root.DistTags.Latest,
 			Children: make([]*DepNode, 0),
 		}
 
@@ -107,6 +109,8 @@ func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, e
 
 func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, error) {
 	root, err := n.Get(rootNode.Name)
+
+	rootNode.Version = root.DistTags.Latest
 
 	if err != nil {
 		return rootNode, fmt.Errorf("error getting package: %w", err)
