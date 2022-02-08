@@ -106,7 +106,6 @@ func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, e
 }
 
 func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, error) {
-	// fmt.Printf("Getting dep %s at level %v\n", rootNode.Name, level)
 	root, err := n.Get(rootNode.Name)
 
 	if err != nil {
@@ -122,18 +121,12 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 		return rootNode, nil
 	}
 
-	done := make(chan bool)
-	defer close(done)
 	depListStream := make(chan string)
 
 	// Push onto deps stream
 	go func() {
 		for pkg := range deps {
-			select {
-			case <-done:
-				return
-			case depListStream <- pkg:
-			}
+			depListStream <- pkg
 		}
 		close(depListStream)
 	}()
@@ -147,7 +140,6 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 		j := i
 		go func() {
 			for item := range depListStream {
-				// fmt.Printf("handling %v in worker %v at level %v\n", item, j, level)
 				intermediateNode := &DepNode{
 					Name:     item,
 					Children: make([]*DepNode, 0),
@@ -158,12 +150,8 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 					fmt.Printf("Error: %v\n", err)
 				}
 
-				select {
-				case <-done:
-					return
-				case resultStream <- childNode:
-					fmt.Printf("handled %v in worker %v at level %v\n", item, j, level)
-				}
+				resultStream <- childNode
+				fmt.Printf("handled %v in worker %v at level %v\n", item, j, level)
 			}
 			close(resultStream)
 		}()
@@ -172,20 +160,16 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 	// merge result of workers back and append onto rootNode.Children
 	var wg sync.WaitGroup
 	resultDeps := make(chan *DepNode)
-	multiplex := func(c <-chan *DepNode) {
+	mergeResults := func(c <-chan *DepNode) {
 		defer wg.Done()
 		for i := range c {
-			select {
-			case <-done:
-				return
-			case resultDeps <- i:
-			}
+			resultDeps <- i
 		}
 	}
 
 	for _, c := range resultStreams {
 		wg.Add(1)
-		go multiplex(c)
+		go mergeResults(c)
 	}
 
 	go func() {
