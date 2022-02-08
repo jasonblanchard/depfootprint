@@ -37,6 +37,10 @@ func (n *NpmJS) Get(pkgName string) (*Pkg, error) {
 		return nil, fmt.Errorf("error making request: %w", err)
 	}
 
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error, non-200 status code: %v", res.StatusCode)
+	}
+
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading body: %w", err)
@@ -110,11 +114,11 @@ func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, e
 func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, error) {
 	root, err := n.Get(rootNode.Name)
 
-	rootNode.Version = root.DistTags.Latest
-
 	if err != nil {
 		return rootNode, fmt.Errorf("error getting package: %w", err)
 	}
+
+	rootNode.Version = root.DistTags.Latest
 
 	deps, ok := GetDependencyListByVersion(root, nil)
 	if !ok {
