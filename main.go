@@ -10,7 +10,12 @@ import (
 func main() {
 	npmjsFetcher := &npmjs.NpmJS{}
 
-	deps, err := npmjsFetcher.Tree("express")
+	// pkg, err := npmjsFetcher.Get("express")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	deps, err := npmjsFetcher.Tree("remix")
 	if err != nil {
 		log.Fatal(err)
 	}

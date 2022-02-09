@@ -5,15 +5,24 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"strconv"
 	"sync"
+
+	"github.com/gocolly/colly"
 )
 
 type DistTags struct {
 	Latest string `json:"latest"`
 }
 
+type Dist struct {
+	UnpackedSize int `json:"unpackedSize"`
+}
+
 type Version struct {
 	Dependencies map[string]string `json:"dependencies"`
+	Dist         Dist              `json:"dist"`
 }
 
 type Pkg struct {
@@ -71,9 +80,11 @@ func GetDependencyListByVersion(pkg *Pkg, version *string) (dependencies map[str
 }
 
 type DepNode struct {
-	Name     string
-	Version  string
-	Children []*DepNode
+	Name        string
+	Version     string
+	HealthScore int
+	Size        int
+	Children    []*DepNode
 }
 
 func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, error) {
@@ -118,7 +129,18 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 		return rootNode, fmt.Errorf("error getting package: %w", err)
 	}
 
+	score := n.GetPackageScore(rootNode.Name)
+
+	rootNode.HealthScore = score
+
 	rootNode.Version = root.DistTags.Latest
+
+	version, ok := root.Versions[root.DistTags.Latest]
+
+	if ok {
+		size := version.Dist.UnpackedSize
+		rootNode.Size = size
+	}
 
 	deps, ok := GetDependencyListByVersion(root, nil)
 	if !ok {
@@ -234,4 +256,29 @@ func (n *NpmJS) Tree(pkg string) (*DepNode, error) {
 	}
 
 	return deps, nil
+}
+
+func (n *NpmJS) GetPackageScore(pkgName string) int {
+	c := colly.NewCollector(
+		colly.AllowedDomains("snyk.io"),
+	)
+
+	var text string
+
+	c.OnHTML(".number", func(e *colly.HTMLElement) {
+		text = e.Text
+	})
+
+	c.Visit(fmt.Sprintf("https://snyk.io/advisor/npm-package/%s", pkgName))
+
+	r := regexp.MustCompile(`Package Health Score (.*) / 100`)
+	match := r.FindAllStringSubmatch(text, -1)
+	scoreString := match[0][1]
+	storeInt, _ := strconv.Atoi(scoreString)
+
+	// if err != nil {
+	// 	fmt.Errorf("error parsing result string: %w", err)
+	// }
+
+	return storeInt
 }
