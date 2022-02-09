@@ -38,7 +38,7 @@ func (n *NpmJS) Get(pkgName string) (*Pkg, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error, non-200 status code: %v", res.StatusCode)
+		return nil, fmt.Errorf("error, non-200 status code for %s%s: %v", req.URL.Host, req.URL.Path, res.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -81,7 +81,7 @@ func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, e
 	root, err := n.Get(rootNode.Name)
 
 	if err != nil {
-		return rootNode, fmt.Errorf("error getting package: %w", err)
+		return rootNode, fmt.Errorf("error getting package %v: %w", rootNode.Name, err)
 	}
 
 	deps, ok := GetDependencyListByVersion(root, nil)
@@ -140,28 +140,32 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 	}()
 
 	resultStreams := []chan *DepNode{}
+	errStreams := []chan error{}
 
 	// make workers to work on pkgs
 	for i := 0; i < 8; i++ {
 		resultStream := make(chan *DepNode)
 		resultStreams = append(resultStreams, resultStream)
-		j := i
+		errStream := make(chan error)
+		errStreams = append(errStreams, errStream)
+		// j := i
 		go func() {
-			for item := range depListStream {
+			for depName := range depListStream {
 				intermediateNode := &DepNode{
-					Name:     item,
+					Name:     depName,
 					Children: make([]*DepNode, 0),
 				}
 
 				childNode, err := n.WalkDependenciesAsync(intermediateNode, level+1)
 				if err != nil {
-					fmt.Printf("Error: %v\n", err)
+					errStream <- err
 				}
 
 				resultStream <- childNode
-				fmt.Printf("handled %v in worker %v at level %v\n", item, j, level)
+				// fmt.Printf("handled %v in worker %v at level %v\n", depName, j, level)
 			}
 			close(resultStream)
+			close(errStream)
 		}()
 	}
 
@@ -180,15 +184,42 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 		go mergeResults(c)
 	}
 
+	resultErrs := make(chan error)
+	mergeResultErrs := func(c <-chan error) {
+		defer wg.Done()
+		for i := range c {
+			resultErrs <- i
+		}
+	}
+
+	for _, ec := range errStreams {
+		wg.Add(1)
+		go mergeResultErrs(ec)
+	}
+
 	go func() {
 		for d := range resultDeps {
 			rootNode.Children = append(rootNode.Children, d)
 		}
 	}()
 
+	finalErrs := []error{}
+
+	go func() {
+		for e := range resultErrs {
+			finalErrs = append(finalErrs, e)
+		}
+	}()
+
 	wg.Wait()
 
-	return rootNode, nil
+	var finalErr error
+
+	if len(finalErrs) > 0 {
+		finalErr = finalErrs[0]
+	}
+
+	return rootNode, finalErr
 }
 
 func (n *NpmJS) Tree(pkg string) (*DepNode, error) {
