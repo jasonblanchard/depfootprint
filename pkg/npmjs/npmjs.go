@@ -87,49 +87,77 @@ type DepNode struct {
 	Children    []*DepNode
 }
 
-func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, error) {
-	fmt.Printf("Getting dep %s at level %v\n", rootNode.Name, level)
-	root, err := n.Get(rootNode.Name)
+// func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, error) {
+// 	fmt.Printf("Getting dep %s at level %v\n", rootNode.Name, level)
+// 	root, err := n.Get(rootNode.Name)
 
-	if err != nil {
-		return rootNode, fmt.Errorf("error getting package %v: %w", rootNode.Name, err)
-	}
+// 	if err != nil {
+// 		return rootNode, fmt.Errorf("error getting package %v: %w", rootNode.Name, err)
+// 	}
 
-	deps, ok := GetDependencyListByVersion(root, nil)
+// 	deps, ok := GetDependencyListByVersion(root, nil)
 
-	if !ok {
-		return rootNode, nil
-	}
+// 	if !ok {
+// 		return rootNode, nil
+// 	}
 
-	if len(deps) == 0 {
-		return rootNode, nil
-	}
+// 	if len(deps) == 0 {
+// 		return rootNode, nil
+// 	}
 
-	for pkg := range deps {
-		intermediateNode := &DepNode{
-			Name:     pkg,
-			Version:  root.DistTags.Latest,
-			Children: make([]*DepNode, 0),
-		}
+// 	for pkg := range deps {
+// 		intermediateNode := &DepNode{
+// 			Name:     pkg,
+// 			Version:  root.DistTags.Latest,
+// 			Children: make([]*DepNode, 0),
+// 		}
 
-		childNode, err := n.WalkDependenciesSync(intermediateNode, level+1)
-		if err != nil {
-			return rootNode, fmt.Errorf("error walking dep: %w", err)
-		}
-		rootNode.Children = append(rootNode.Children, childNode)
-	}
+// 		childNode, err := n.WalkDependenciesSync(intermediateNode, level+1)
+// 		if err != nil {
+// 			return rootNode, fmt.Errorf("error walking dep: %w", err)
+// 		}
+// 		rootNode.Children = append(rootNode.Children, childNode)
+// 	}
 
-	return rootNode, nil
-}
+// 	return rootNode, nil
+// }
 
 func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, error) {
-	root, err := n.Get(rootNode.Name)
+	rootChan := make(chan *Pkg)
+	scoreChan := make(chan int)
+	errChan := make(chan error)
 
-	if err != nil {
-		return rootNode, fmt.Errorf("error getting package: %w", err)
+	go func() {
+		root, err := n.Get(rootNode.Name)
+		if err != nil {
+			errChan <- err
+		}
+		rootChan <- root
+	}()
+
+	go func() {
+		score, err := n.GetPackageScore(rootNode.Name)
+		if err != nil {
+			errChan <- err
+		}
+		scoreChan <- score
+	}()
+
+	var root *Pkg
+	var score int
+	var err error
+
+	for i := 0; i < 2; i++ {
+		select {
+		case root = <-rootChan:
+		case score = <-scoreChan:
+		case err = <-errChan:
+		}
 	}
 
-	score := n.GetPackageScore(rootNode.Name)
+	if err != nil {
+		return rootNode, err
+	}
 
 	rootNode.HealthScore = score
 
@@ -258,7 +286,7 @@ func (n *NpmJS) Tree(pkg string) (*DepNode, error) {
 	return deps, nil
 }
 
-func (n *NpmJS) GetPackageScore(pkgName string) int {
+func (n *NpmJS) GetPackageScore(pkgName string) (int, error) {
 	c := colly.NewCollector(
 		colly.AllowedDomains("snyk.io"),
 	)
@@ -273,6 +301,11 @@ func (n *NpmJS) GetPackageScore(pkgName string) int {
 
 	r := regexp.MustCompile(`Package Health Score (.*) / 100`)
 	match := r.FindAllStringSubmatch(text, -1)
+
+	if len(match) == 0 {
+		return 0, fmt.Errorf("no score for package")
+	}
+
 	scoreString := match[0][1]
 	storeInt, _ := strconv.Atoi(scoreString)
 
@@ -280,5 +313,5 @@ func (n *NpmJS) GetPackageScore(pkgName string) int {
 	// 	fmt.Errorf("error parsing result string: %w", err)
 	// }
 
-	return storeInt
+	return storeInt, nil
 }
