@@ -30,6 +30,14 @@ type Pkg struct {
 	Versions map[string]Version `json:"versions"`
 }
 
+type DepNode struct {
+	Name        string
+	Version     string
+	HealthScore int
+	Size        int
+	Children    []*DepNode
+}
+
 type NpmJS struct {
 }
 
@@ -79,12 +87,34 @@ func GetDependencyListByVersion(pkg *Pkg, version *string) (dependencies map[str
 	return packageVersion.Dependencies, true
 }
 
-type DepNode struct {
-	Name        string
-	Version     string
-	HealthScore int
-	Size        int
-	Children    []*DepNode
+func (n *NpmJS) GetPackageScore(pkgName string) (int, error) {
+	c := colly.NewCollector(
+		colly.AllowedDomains("snyk.io"),
+	)
+
+	var text string
+
+	c.OnHTML(".number", func(e *colly.HTMLElement) {
+		text = e.Text
+	})
+
+	c.Visit(fmt.Sprintf("https://snyk.io/advisor/npm-package/%s", pkgName))
+
+	r := regexp.MustCompile(`Package Health Score (.*) / 100`)
+	match := r.FindAllStringSubmatch(text, -1)
+
+	if len(match) == 0 {
+		return 0, fmt.Errorf("no score for package")
+	}
+
+	scoreString := match[0][1]
+	storeInt, err := strconv.Atoi(scoreString)
+
+	if err != nil {
+		return 0, fmt.Errorf("error parsing result string: %w", err)
+	}
+
+	return storeInt, nil
 }
 
 // func (n *NpmJS) WalkDependenciesSync(rootNode *DepNode, level uint) (*DepNode, error) {
@@ -284,34 +314,4 @@ func (n *NpmJS) Tree(pkg string) (*DepNode, error) {
 	}
 
 	return deps, nil
-}
-
-func (n *NpmJS) GetPackageScore(pkgName string) (int, error) {
-	c := colly.NewCollector(
-		colly.AllowedDomains("snyk.io"),
-	)
-
-	var text string
-
-	c.OnHTML(".number", func(e *colly.HTMLElement) {
-		text = e.Text
-	})
-
-	c.Visit(fmt.Sprintf("https://snyk.io/advisor/npm-package/%s", pkgName))
-
-	r := regexp.MustCompile(`Package Health Score (.*) / 100`)
-	match := r.FindAllStringSubmatch(text, -1)
-
-	if len(match) == 0 {
-		return 0, fmt.Errorf("no score for package")
-	}
-
-	scoreString := match[0][1]
-	storeInt, _ := strconv.Atoi(scoreString)
-
-	// if err != nil {
-	// 	fmt.Errorf("error parsing result string: %w", err)
-	// }
-
-	return storeInt, nil
 }
