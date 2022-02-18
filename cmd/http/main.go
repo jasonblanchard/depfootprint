@@ -17,9 +17,11 @@ func main() {
 	})
 	e.GET("/api/tree/:package", func(c echo.Context) error {
 		npmjsFetcher := &npmjs.NpmJS{}
+		pkg := c.Param("package")
 
-		deps, err := npmjsFetcher.Tree("remix")
+		deps, err := npmjsFetcher.Tree(pkg)
 		if err != nil {
+			e.Logger.Error(err)
 			return c.JSON(http.StatusInternalServerError, err)
 		}
 

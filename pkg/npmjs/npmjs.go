@@ -31,11 +31,11 @@ type Pkg struct {
 }
 
 type DepNode struct {
-	Name        string
-	Version     string
-	HealthScore int
-	Size        int
-	Children    []*DepNode
+	Name        string     `json:"name"`
+	Version     string     `json:"version"`
+	HealthScore int        `json:"healthScore"`
+	Size        int        `json:"size"`
+	Children    []*DepNode `json:"children"`
 }
 
 type NpmJS struct {
@@ -104,7 +104,7 @@ func (n *NpmJS) GetPackageScore(pkgName string) (int, error) {
 	match := r.FindAllStringSubmatch(text, -1)
 
 	if len(match) == 0 {
-		return 0, fmt.Errorf("no score for package")
+		return 0, fmt.Errorf("no score for package %s", pkgName)
 	}
 
 	scoreString := match[0][1]
@@ -166,10 +166,10 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 	}()
 
 	go func() {
-		score, err := n.GetPackageScore(rootNode.Name)
-		if err != nil {
-			errChan <- err
-		}
+		score, _ := n.GetPackageScore(rootNode.Name)
+		// if err != nil {
+		// 	errChan <- err
+		// }
 		scoreChan <- score
 	}()
 
@@ -304,7 +304,7 @@ func (n *NpmJS) WalkDependenciesAsync(rootNode *DepNode, level uint) (*DepNode, 
 
 func (n *NpmJS) Tree(pkg string) (*DepNode, error) {
 	node := &DepNode{
-		Name:     "express",
+		Name:     pkg,
 		Children: make([]*DepNode, 0),
 	}
 
