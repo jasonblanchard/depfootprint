@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router'
 import dynamic from "next/dynamic";
+import Link from 'next/link';
 
 import TreeView from '../../components/TreeView';
 import TreeFetcher from '../../components/TreeFetcher';
@@ -10,11 +11,19 @@ function PackagePage() {
 
     if (!pkg) return null;
     return (
-        <TreeFetcher pkg={pkg as string}>
-            {({ dependencies }) => {
-                return <TreeView dependencies={dependencies} />
-            }}
-        </TreeFetcher>
+        <div>
+            <div className="container mx-auto my-5">
+                <Link href="/" passHref>
+                    <a className="text-slate-500 hover:underline">home</a>
+                </Link>
+                <h2 className="font-bold text-lg">{pkg}</h2>
+            </div>
+            <TreeFetcher pkg={pkg as string}>
+                {({ dependencies }) => {
+                    return <TreeView dependencies={dependencies} />
+                }}
+            </TreeFetcher>
+        </div>
     )
 }
 

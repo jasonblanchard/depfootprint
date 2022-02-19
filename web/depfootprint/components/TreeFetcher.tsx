@@ -17,7 +17,7 @@ export default function TreeFetcher({ pkg, children }: TreeFetcherProps) {
 
         return json;
 
-    }, { refetchOnWindowFocus: false });
+    }, { refetchOnWindowFocus: false, cacheTime: 0 });
 
     if (query.isLoading) {
         return <div>Loading...</div>
