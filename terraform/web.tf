@@ -14,6 +14,19 @@ resource "aws_s3_bucket_website_configuration" "web" {
   }
 }
 
+resource "aws_apigatewayv2_integration" "web" {
+  api_id             = aws_apigatewayv2_api.gw.id
+  integration_type   = "HTTP_PROXY"
+  integration_uri    = "http://${aws_s3_bucket.web.website_endpoint}"
+  integration_method = "GET"
+}
+
+resource "aws_apigatewayv2_route" "web" {
+  api_id    = aws_apigatewayv2_api.gw.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.web.id}"
+}
+
 output "web_host" {
   value = aws_s3_bucket.web.website_endpoint
 }
