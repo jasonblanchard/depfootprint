@@ -12,7 +12,7 @@ func MakeEcho() (*echo.Echo, error) {
 	e := echo.New()
 	e.Use(middleware.Logger())
 
-	e.GET("/", func(c echo.Context) error {
+	e.GET("/api/health", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 	e.GET("/api/tree/:package", func(c echo.Context) error {
