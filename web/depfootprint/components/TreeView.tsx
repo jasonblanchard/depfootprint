@@ -31,18 +31,18 @@ const containerStyles = {
 };
 
 const renderRectSvgNode = ({ nodeDatum, toggleNode }: any) => {
-    let fill = "red";
+    let fill = "#f52a2a";
 
     if (nodeDatum.healthScore > 70) {
-        fill = "orange";
+        fill = "#f9a202";
     }
 
     if (nodeDatum.healthScore > 80) {
-        fill = "yellow";
+        fill = "#f0f74c";
     }
 
     if (nodeDatum.healthScore > 90) {
-        fill = "green";
+        fill = "#60bd60";
     }
 
     let rMultiplier = (nodeDatum.size / 10000) * .4;
@@ -61,8 +61,11 @@ const renderRectSvgNode = ({ nodeDatum, toggleNode }: any) => {
     return (
         <g>
             <circle fill={fill} r={40 * rMultiplier} onClick={toggleNode} />
-            <text strokeWidth="1" x="20">
-                {nodeDatum.name} ({nodeDatum.healthScore}, {nodeDatum.size}mb)
+            <text x={-20} strokeWidth="1">
+                {nodeDatum.name}
+            </text>
+            <text font-size={10} x={-20} strokeWidth=".5" y={18}>
+                ({nodeDatum.healthScore}, {nodeDatum.size}mb)
             </text>
         </g>
     );

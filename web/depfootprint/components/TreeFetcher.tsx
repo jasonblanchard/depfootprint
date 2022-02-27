@@ -24,7 +24,7 @@ export default function TreeFetcher({ pkg, children }: TreeFetcherProps) {
             <div className="container mx-auto flex align-items-center">
                 <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full text-green-500 border-blue-500 border-r-white" role="status" />
                 <div className="mx-3 py-1 flex align-items-center">
-                    Building dependency graph...
+                    Building dependency graph for {pkg}...
                 </div>
             </div>
         )
