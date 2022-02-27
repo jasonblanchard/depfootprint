@@ -45,7 +45,18 @@ const renderRectSvgNode = ({ nodeDatum, toggleNode }: any) => {
         fill = "green";
     }
 
-    const rMultiplier = 1 // (nodeDatum.size / 10000) * .4;
+    let rMultiplier = (nodeDatum.size / 10000) * .4;
+    const lowerBound = .2;
+    const upperBound = 1.5;
+    
+    // Bound it so the circles don't get too big or too small
+    if (rMultiplier < lowerBound) {
+        rMultiplier = lowerBound;
+    }
+
+    if (rMultiplier > upperBound) {
+        rMultiplier = upperBound
+    }
 
     return (
         <g>
