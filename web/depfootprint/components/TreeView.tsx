@@ -19,7 +19,7 @@ export const useCenteredTree = (defaultTranslate = { x: 0, y: 0 }) => {
     const containerRef = useCallback((containerElem: any) => {
         if (containerElem !== null) {
             const { width, height } = containerElem.getBoundingClientRect();
-            setTranslate({ x: width / 2, y: height / 2 });
+            setTranslate({ x: width / 2, y: height / 5 });
         }
     }, []);
     return [translate, containerRef];
@@ -71,15 +71,17 @@ const renderRectSvgNode = ({ nodeDatum, toggleNode }: any) => {
 export default function TreeView({ dependencies }: TreeViewProps) {
     const router = useRouter();
     const { package: pkg } = router.query;
-    // const [translate, containerRef] = useCenteredTree();
+    const [translate, containerRef] = useCenteredTree();
 
     return (
-        <div style={containerStyles}>
+        // @ts-ignore
+        <div style={containerStyles} ref={containerRef}>
             <Tree
                 orientation="vertical"
                 data={dependencies}
                 renderCustomNodeElement={renderRectSvgNode}
-                // translate={translate}
+                // @ts-ignore
+                translate={translate}
                 zoomable
             />
         </div>
