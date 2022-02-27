@@ -7,7 +7,7 @@ const BaseLayout: React.FC = ({ children }) => {
             <header className="container mx-auto my-5">
                 <h1 className="font-bold text-2xl">
                     <Link href="/" passHref>
-                        <a href="/" className="hover:underline">depfootprint</a>
+                        <a className="hover:underline">depfootprint</a>
                     </Link>
                 </h1>
             </header>

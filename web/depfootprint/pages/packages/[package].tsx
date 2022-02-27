@@ -14,7 +14,7 @@ function PackagePage() {
         <BaseLayout>
             <div className="container mx-auto my-5">
                 <h2 className="font-bold text-lg">
-                    <a className="hover:underline" href={`https://www.npmjs.com/package/${pkg}`} target="_blank">{pkg}</a>
+                    <a className="hover:underline" href={`https://www.npmjs.com/package/${pkg}`} target="_blank" rel="noreferrer">{pkg}</a>
                 </h2>
             </div>
             <TreeFetcher pkg={pkg as string}>

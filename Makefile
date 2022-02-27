@@ -1,4 +1,7 @@
-pushweb:
+buildweb:
+	cd web/depfootprint && npm run export
+
+pushweb: buildweb
 	aws s3 sync ./web/depfootprint/out s3://depfootprint-static-assets --acl public-read
 
 buildapi:

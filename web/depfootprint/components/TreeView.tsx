@@ -64,7 +64,7 @@ const renderRectSvgNode = ({ nodeDatum, toggleNode }: any) => {
             <text x={-20} strokeWidth="1">
                 {nodeDatum.name}
             </text>
-            <text font-size={10} x={-20} strokeWidth=".5" y={18}>
+            <text fontSize={10} x={-20} strokeWidth=".5" y={18}>
                 ({nodeDatum.healthScore}, {nodeDatum.size}mb)
             </text>
         </g>
