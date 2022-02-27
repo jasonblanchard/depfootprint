@@ -16,6 +16,9 @@ function PackagePage() {
                 <h2 className="font-bold text-lg">
                     <a className="hover:underline" href={`https://www.npmjs.com/package/${pkg}`} target="_blank" rel="noreferrer">{pkg}</a>
                 </h2>
+                <div className="text-zinc-500">
+                    Click, drag and zoom to explore the dependency tree.
+                </div>
             </div>
             <TreeFetcher pkg={pkg as string}>
                 {({ dependencies }) => {
