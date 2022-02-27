@@ -5,11 +5,11 @@ const BaseLayout: React.FC = ({ children }) => {
     return (
         <div className="text-zinc-700">
             <header className="container mx-auto my-5">
-                <Link href="/" passHref>
-                    <h1 className="font-bold text-2xl">
+                <h1 className="font-bold text-2xl">
+                    <Link href="/" passHref>
                         <a href="/" className="hover:underline">depfootprint</a>
-                    </h1>
-                </Link>
+                    </Link>
+                </h1>
             </header>
             {children}
         </div>
