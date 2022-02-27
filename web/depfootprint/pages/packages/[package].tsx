@@ -16,7 +16,9 @@ function PackagePage() {
                 <Link href="/" passHref>
                     <a className="text-slate-500 hover:underline">home</a>
                 </Link>
-                <h2 className="font-bold text-lg">{pkg}</h2>
+                <h2 className="font-bold text-lg">
+                    <a className="hover:underline" href={`https://www.npmjs.com/package/${pkg}`} target="_blank">{pkg}</a>
+                </h2>
             </div>
             <TreeFetcher pkg={pkg as string}>
                 {({ dependencies }) => {

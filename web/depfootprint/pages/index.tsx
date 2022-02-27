@@ -18,9 +18,9 @@ const Home: NextPage = () => {
       <form onSubmit={handleSubmit}>
         <label>
           NPM package:
-          <input placeholder="express" ref={inputEl} className="border-2 rounded border-neutral-600 mx-2 p-1" type="text" />
+          <input placeholder="express" ref={inputEl} className="bg-gray-200 appearance-none border-2 border-gray-200 rounded py-2 px-1 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500 mx-2" type="text" />
         </label>
-        <button className="border-2 border-neutral-600 rounded px-4 py-1 bg-neutral-300 hover:bg-neutral-400 focus:bg-neutral-400">Go</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Go</button>
       </form>
     </div>
     )
